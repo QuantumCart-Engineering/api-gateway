@@ -13,12 +13,20 @@ on:
       - uat
       - master
 
+# The gateway is a stateless edge proxy: it owns no database, queue or other
+# backing service, so this job only needs read access to the repository.
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     env:
       NODE_ENV: test
+      # Dummy, test-only value. The gateway tests build their configuration
+      # in-memory (see src/__tests__/helpers/config.ts) and never reach real
+      # downstream services or production resources.
       JWT_SECRET: ci-gateway-secret
 
     steps:
@@ -27,15 +35,19 @@ jobs:
       # Checkout API Gateway
       # =========================
       - name: Checkout API Gateway
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # =========================
       # Setup Node.js
       # =========================
+      # Node 24 is required: http-proxy-middleware@4 is ESM-only and Jest 30
+      # can only require() ESM dependencies natively on Node >= 24.9. On Node 22
+      # the integration suite fails to run with "Must use import to load ES
+      # Module", while unit tests pass because they mock the proxy middleware.
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       # =========================
