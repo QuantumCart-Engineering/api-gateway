@@ -1,7 +1,7 @@
 import { Router } from "express";
 import swaggerUi from "swagger-ui-express";
 
-import { createOpenApiDocument } from "../config/swagger";
+import { swaggerSpec } from "../docs/swagger";
 import { logger } from "../utils/logger";
 
 import type { GatewayConfig } from "../types/gateway";
@@ -21,16 +21,14 @@ export const createDocsRouter = (
         return router;
     }
 
-    const document = createOpenApiDocument(config);
-
     router.get("/openapi.json", (_req, res) => {
-        res.status(200).json(document);
+        res.status(200).json(swaggerSpec);
     });
 
     router.use(
         "/api-docs",
         swaggerUi.serve,
-        swaggerUi.setup(document, {
+        swaggerUi.setup(swaggerSpec, {
             customSiteTitle: "QuantumCart API Gateway"
         })
     );

@@ -64,9 +64,3 @@ export const buildServiceTargets = (
 
     return targets;
 };
-
-export const isServiceName = (
-    value: string
-): value is ServiceName => {
-    return (SERVICE_NAMES as readonly string[]).includes(value);
-};

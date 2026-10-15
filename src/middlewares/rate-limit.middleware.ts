@@ -11,14 +11,14 @@ export interface RateLimiters {
 }
 
 const handler = (
-    _req: Request,
+    req: Request,
     res: Response
 ): void => {
     res.status(429).json({
         success: false,
         error: {
             message: "Too many requests, please try again later",
-            requestId: getRequestId(res.req.headers)
+            requestId: getRequestId(req.headers)
         }
     });
 };

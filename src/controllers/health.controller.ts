@@ -1,10 +1,7 @@
 import type { Request, Response } from "express";
 
 import { getGatewayConfig } from "../config/env";
-import {
-    checkDownstreamHealth,
-    checkServiceHealth
-} from "../services/health.service";
+import { checkDownstreamHealth } from "../services/health.service";
 import { asyncHandler } from "../utils/async-handler";
 
 import type { GatewayConfig } from "../types/gateway";
@@ -40,20 +37,5 @@ export const createReadinessHandler = (
             service: "api-gateway",
             timestamp: new Date().toISOString(),
             dependencies
-        });
-    });
-
-export const createServiceHealthHandler = (
-    name: Parameters<typeof checkServiceHealth>[1],
-    config: GatewayConfig = getGatewayConfig()
-) =>
-    asyncHandler(async (_req, res) => {
-        const dependency = await checkServiceHealth(config, name);
-
-        res.status(dependency.status === "up" ? 200 : 503).json({
-            status: dependency.status,
-            service: "api-gateway",
-            timestamp: new Date().toISOString(),
-            dependency
         });
     });

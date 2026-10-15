@@ -20,11 +20,32 @@ import type { RequestHandler as ProxyRequestHandler, Options } from "http-proxy-
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { GatewayConfig, ServiceName, ServiceTarget } from "../types/gateway";
 
+/**
+ * Remove hop-by-hop headers from a downstream response.
+ *
+ * The headers must be deleted from `proxyRes.headers` (not from the Express
+ * response): http-proxy copies `proxyRes.headers` onto the response *after*
+ * this listener runs, so removing them from `res` would have no effect.
+ */
 const stripHopByHopResponseHeaders = (
-    res: { removeHeader: (name: string) => void }
+    headers: Record<string, unknown>
 ): void => {
+    // Read the Connection directive before the header is removed so any
+    // additional connection-specific headers it names can be dropped.
+    const connection = headers["connection"];
+
     for (const header of HOP_BY_HOP_HEADERS) {
-        res.removeHeader(header);
+        delete headers[header];
+    }
+
+    if (typeof connection === "string") {
+        for (const token of connection.split(",")) {
+            const name = token.trim().toLowerCase();
+
+            if (name.length > 0) {
+                delete headers[name];
+            }
+        }
     }
 };
 
@@ -74,13 +95,9 @@ const buildProxyOptions = (
                 fixRequestBody(proxyReq, req);
             },
 
-            proxyRes: (proxyRes, _req, res) => {
+            proxyRes: (proxyRes) => {
                 // Never propagate transport-level headers from downstream.
-                stripHopByHopResponseHeaders(res);
-
-                // Introspect the response so the parameter is not unused and
-                // downstream status is available for future observability.
-                void proxyRes.statusCode;
+                stripHopByHopResponseHeaders(proxyRes.headers);
             },
 
             // Supplying a custom error handler prevents http-proxy-middleware

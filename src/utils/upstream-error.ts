@@ -1,5 +1,3 @@
-import type { NextFunction, Request, Response } from "express";
-
 import { AppError } from "../utils/app-error";
 
 export interface UpstreamErrorInfo {
@@ -133,10 +131,3 @@ export const isUpstreamError = (error: unknown): boolean => {
         message.includes("timed out")
     );
 };
-
-export type UpstreamErrorHandler = (
-    error: unknown,
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => void;

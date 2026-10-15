@@ -54,8 +54,9 @@ gateway publishes an aggregated overview at `/api-docs` and `/openapi.json`.
   `JWT_SECRET` (no round trip per request).
 - Client-supplied `x-user-id` headers are **always stripped**. Downstream
   services can trust `x-user-id` because only the gateway sets it.
-- `cart` and `order` require `x-user-id`; the gateway injects it for those
-  routes. Other protected routes simply require a valid token.
+- `cart`, `order`, `payment`, `inventory` and `customer` require `x-user-id`;
+  the gateway injects it for those routes. Other protected routes simply
+  require a valid token.
 
 ### Route policy
 
@@ -184,8 +185,9 @@ The image is multi-stage and runs as the non-root `node` user with a
 
 ```
 src/
-  config/       env loader, service registry, route registry, swagger
+  config/       env loader, service registry, route registry
   constants/    HTTP constants (hop-by-hop headers, header names)
+  docs/         aggregated OpenAPI definition (swagger-jsdoc)
   controllers/  health/readiness handlers
   middlewares/  request-id, auth, rate-limit, cors, sanitizer, error, 404
   routes/       health, docs, proxy, aggregate router
