@@ -29,8 +29,10 @@ services:
       PROXY_TIMEOUT_MS: ${PROXY_TIMEOUT_MS:-30000}
       BODY_LIMIT: ${BODY_LIMIT:-1mb}
 
-      # CORS (comma separated). Empty allows all origins outside production.
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      # CORS (comma separated). Defaults to the local storefront origin;
+      # override for production. An empty list is only permissive outside
+      # production, so it must not be left empty when NODE_ENV=production.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:4200}
 
       # Rate limiting
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
