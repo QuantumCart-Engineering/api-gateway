@@ -18,7 +18,9 @@ import type { GatewayConfig } from "../types/gateway";
  *   2. resolves the route policy for the request,
  *   3. for protected routes verifies the JWT locally and rejects the
  *      request with 401 when it is missing or invalid,
- *   4. injects the verified `x-user-id` downstream when the route
+ *   4. enforces the roles declared by the route, rejecting the request
+ *      with 403 when the token role is not permitted,
+ *   5. injects the verified `x-user-id` downstream when the route
  *      requires it.
  *
  * Verification happens locally using the shared `JWT_SECRET`, so the
@@ -84,6 +86,21 @@ export const createAuthMiddleware = (
         }
 
         req.user = payload;
+
+        // Role-based authorization for protected routes that declare roles.
+        if (route.roles.length > 0) {
+            const role = payload.role;
+
+            if (!role || !route.roles.includes(role)) {
+                next(
+                    new AppError(
+                        "Insufficient permissions",
+                        403
+                    )
+                );
+                return;
+            }
+        }
 
         if (route.injectUserId) {
             req.headers[USER_ID_HEADER] = payload.userId;

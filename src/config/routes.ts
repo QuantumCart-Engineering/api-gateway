@@ -67,6 +67,7 @@ export const ROUTE_RULES: readonly RouteRule[] = [
         service: "product",
         pathPrefix: "/api/v1/products",
         auth: "required",
+        roles: ["ADMIN"],
         description: "Create, update and delete products"
     },
     {
@@ -80,6 +81,7 @@ export const ROUTE_RULES: readonly RouteRule[] = [
         service: "product",
         pathPrefix: "/api/v1/categories",
         auth: "required",
+        roles: ["ADMIN"],
         description: "Create, update and delete categories"
     },
 
@@ -193,7 +195,8 @@ export const resolveRouteRule = (
         return {
             service: rule.service,
             auth: rule.auth,
-            injectUserId: rule.injectUserId ?? false
+            injectUserId: rule.injectUserId ?? false,
+            roles: rule.roles ?? []
         };
     }
 

@@ -36,6 +36,33 @@ describe("config/routes", () => {
             ).toMatchObject({ service: "product", auth: "required" });
         });
 
+        it("restricts product and category writes to admins", () => {
+            expect(
+                resolveRouteRule("POST", "/api/v1/products")?.roles
+            ).toEqual(["ADMIN"]);
+            expect(
+                resolveRouteRule("PUT", "/api/v1/products/42")?.roles
+            ).toEqual(["ADMIN"]);
+            expect(
+                resolveRouteRule("DELETE", "/api/v1/products/42")?.roles
+            ).toEqual(["ADMIN"]);
+            expect(
+                resolveRouteRule("POST", "/api/v1/categories")?.roles
+            ).toEqual(["ADMIN"]);
+            expect(
+                resolveRouteRule("PUT", "/api/v1/categories/42")?.roles
+            ).toEqual(["ADMIN"]);
+        });
+
+        it("leaves public reads and customer routes without a role restriction", () => {
+            expect(
+                resolveRouteRule("GET", "/api/v1/products")?.roles
+            ).toEqual([]);
+            expect(
+                resolveRouteRule("GET", "/api/v1/cart")?.roles
+            ).toEqual([]);
+        });
+
         it("protects user owned resources and injects the user id", () => {
             for (const path of [
                 "/api/v1/cart",

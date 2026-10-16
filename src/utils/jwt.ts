@@ -1,17 +1,21 @@
 import jwt from "jsonwebtoken";
 
 import { AppError } from "../utils/app-error";
+import type { UserRole } from "../types/gateway";
+
+const USER_ROLES: readonly UserRole[] = ["CUSTOMER", "ADMIN"];
 
 /**
  * Access token payload issued by the identity-service.
  *
  * The identity-service signs tokens with jsonwebtoken's default algorithm
- * (HS256) and a payload of `{ userId, email }`, plus the standard `iat`
- * and `exp` claims.
+ * (HS256) and a payload of `{ userId, email, role }`, plus the standard
+ * `iat` and `exp` claims.
  */
 export interface AccessTokenPayload {
     userId: string;
     email?: string;
+    role?: UserRole;
 }
 
 export interface JwtVerificationOptions {
@@ -43,10 +47,17 @@ export const verifyAccessToken = (
 
     const payload = decoded as jwt.JwtPayload;
 
+    const role =
+        typeof payload.role === "string" &&
+        USER_ROLES.includes(payload.role as UserRole)
+            ? (payload.role as UserRole)
+            : undefined;
+
     return {
         userId: payload.userId as string,
         ...(typeof payload.email === "string"
             ? { email: payload.email }
-            : {})
+            : {}),
+        ...(role ? { role } : {})
     };
 };

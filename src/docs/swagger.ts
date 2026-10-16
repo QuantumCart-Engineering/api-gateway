@@ -145,6 +145,11 @@ const swaggerDefinition = {
             "verifies JWTs once, and forwards requests (with a trusted",
             "`x-user-id` header) to the owning service.",
             "",
+            "Role-based access: product and category write operations",
+            "(`POST`/`PUT`/`DELETE`) require a token carrying the",
+            "`ADMIN` role; other protected routes only require a valid",
+            "token.",
+            "",
             `Downstream services: ${dependencies}.`
         ].join("\n")
     },

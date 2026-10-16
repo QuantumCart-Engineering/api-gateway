@@ -5,6 +5,7 @@ import { TEST_JWT_SECRET } from "./config";
 export interface TestTokenOptions {
     userId?: string;
     email?: string;
+    role?: "CUSTOMER" | "ADMIN";
     secret?: string;
     expiresIn?: jwt.SignOptions["expiresIn"];
     algorithm?: jwt.Algorithm;
@@ -15,7 +16,8 @@ export const signTestToken = (
 ): string => {
     const payload = {
         userId: options.userId ?? "user-123",
-        email: options.email ?? "user@example.com"
+        email: options.email ?? "user@example.com",
+        ...(options.role ? { role: options.role } : {})
     };
 
     return jwt.sign(payload, options.secret ?? TEST_JWT_SECRET, {

@@ -162,6 +162,59 @@ describe("gateway (integration)", () => {
         expect(captured.headers["x-request-id"]).toBeDefined();
     });
 
+    it("rejects a non-admin token on an admin-only write route", async () => {
+        const app = createApp(configFor());
+
+        const before = upstream.requests.length;
+
+        const token = signTestToken({ role: "CUSTOMER" });
+
+        const response = await request(app)
+            .post("/api/v1/products")
+            .set("authorization", `Bearer ${token}`)
+            .send({
+                name: "Test Product",
+                price: 1,
+                sku: "SKU-1",
+                stockQuantity: 1,
+                categoryIds: []
+            });
+
+        expect(response.status).toBe(403);
+        expect(upstream.requests.length).toBe(before);
+    });
+
+    it("rejects a token without a role on an admin-only write route", async () => {
+        const app = createApp(configFor());
+
+        const token = signTestToken();
+
+        const response = await request(app)
+            .delete("/api/v1/products/42")
+            .set("authorization", `Bearer ${token}`);
+
+        expect(response.status).toBe(403);
+    });
+
+    it("allows an admin token on an admin-only write route", async () => {
+        const app = createApp(configFor());
+
+        const token = signTestToken({ role: "ADMIN" });
+
+        const response = await request(app)
+            .post("/api/v1/products")
+            .set("authorization", `Bearer ${token}`)
+            .send({
+                name: "Test Product",
+                price: 1,
+                sku: "SKU-1",
+                stockQuantity: 1,
+                categoryIds: []
+            });
+
+        expect(response.status).toBe(200);
+    });
+
     it("strips a client supplied x-user-id header", async () => {
         const app = createApp(configFor());
 

@@ -9,6 +9,12 @@ export type ServiceName =
 
 export type AuthPolicy = "public" | "required";
 
+/**
+ * Roles carried by the access token. `ADMIN` is required for
+ * administrative write operations; `CUSTOMER` is the default.
+ */
+export type UserRole = "CUSTOMER" | "ADMIN";
+
 export type HttpMethod =
     | "GET"
     | "POST"
@@ -45,6 +51,12 @@ export interface RouteRule {
      */
     injectUserId?: boolean;
 
+    /**
+     * Roles permitted to access the route. When omitted (or empty) any
+     * authenticated user is allowed. Only meaningful for protected routes.
+     */
+    roles?: UserRole[];
+
     /** Human readable description used for logging and documentation. */
     description?: string;
 }
@@ -53,6 +65,7 @@ export interface ResolvedRouteRule {
     service: ServiceName;
     auth: AuthPolicy;
     injectUserId: boolean;
+    roles: UserRole[];
 }
 
 export interface ServiceTarget {
