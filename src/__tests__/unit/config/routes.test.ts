@@ -106,6 +106,64 @@ describe("config/routes", () => {
             expect(resolveRouteRule("GET", "/nope")).toBeNull();
         });
 
+        it("restricts every reporting endpoint to admins", () => {
+            const reportPaths = [
+                "/api/v1/orders/reports/summary",
+                "/api/v1/orders/reports/timeseries",
+                "/api/v1/orders/reports/top-products",
+                "/api/v1/payments/reports/summary",
+                "/api/v1/payments/reports/timeseries",
+                "/api/v1/customers/reports/summary",
+                "/api/v1/products/reports/summary"
+            ];
+
+            for (const path of reportPaths) {
+                expect(resolveRouteRule("GET", path)).toMatchObject({
+                    auth: "required",
+                    roles: ["ADMIN"]
+                });
+            }
+        });
+
+        it("keeps product reports admin-only despite public product reads", () => {
+            expect(
+                resolveRouteRule("GET", "/api/v1/products")?.auth
+            ).toBe("public");
+            expect(
+                resolveRouteRule(
+                    "GET",
+                    "/api/v1/products/reports/summary"
+                )?.roles
+            ).toEqual(["ADMIN"]);
+        });
+
+        it("routes reports to the owning service", () => {
+            expect(
+                resolveRouteRule(
+                    "GET",
+                    "/api/v1/orders/reports/summary"
+                )?.service
+            ).toBe("order");
+            expect(
+                resolveRouteRule(
+                    "GET",
+                    "/api/v1/payments/reports/summary"
+                )?.service
+            ).toBe("payment");
+            expect(
+                resolveRouteRule(
+                    "GET",
+                    "/api/v1/customers/reports/summary"
+                )?.service
+            ).toBe("customer");
+            expect(
+                resolveRouteRule(
+                    "GET",
+                    "/api/v1/products/reports/summary"
+                )?.service
+            ).toBe("product");
+        });
+
         it("does not treat a prefix as matching an unrelated longer segment", () => {
             expect(
                 resolveRouteRule("GET", "/api/v1/cartoon")
@@ -143,14 +201,27 @@ describe("config/routes", () => {
                 ])
             );
             expect(prefixes.cart).toEqual(["/api/v1/cart"]);
-            expect(prefixes.order).toEqual(["/api/v1/orders"]);
-            expect(prefixes.payment).toEqual(["/api/v1/payments"]);
+            expect(prefixes.order).toEqual(
+                expect.arrayContaining([
+                    "/api/v1/orders",
+                    "/api/v1/orders/reports"
+                ])
+            );
+            expect(prefixes.payment).toEqual(
+                expect.arrayContaining([
+                    "/api/v1/payments",
+                    "/api/v1/payments/reports"
+                ])
+            );
             expect(prefixes.inventory).toEqual([
                 "/api/v1/inventory"
             ]);
-            expect(prefixes.customer).toEqual([
-                "/api/v1/customers"
-            ]);
+            expect(prefixes.customer).toEqual(
+                expect.arrayContaining([
+                    "/api/v1/customers",
+                    "/api/v1/customers/reports"
+                ])
+            );
         });
     });
 });

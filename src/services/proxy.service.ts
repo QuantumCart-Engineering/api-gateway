@@ -95,9 +95,18 @@ const buildProxyOptions = (
                 fixRequestBody(proxyReq, req);
             },
 
-            proxyRes: (proxyRes) => {
+            proxyRes: (proxyRes, req, res) => {
                 // Never propagate transport-level headers from downstream.
                 stripHopByHopResponseHeaders(proxyRes.headers);
+
+                // Product images must be loadable cross-origin by the local frontends.
+                if (req.path && req.path.startsWith("/api/v1/products/images/")) {
+                    proxyRes.headers["cross-origin-resource-policy"] = "cross-origin";
+                    // Ensure the image response is not blocked by a restrictive CSP
+                    // from upstream services; the gateway sets its own policy.
+                    proxyRes.headers["content-security-policy"] =
+                        "default-src 'self'; img-src 'self' data: http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'";
+                }
             },
 
             // Supplying a custom error handler prevents http-proxy-middleware

@@ -20,75 +20,89 @@ import type { GatewayConfig } from "./types/gateway";
  * Credential endpoints that receive a stricter rate limit.
  */
 const AUTH_RATE_LIMITED_PATHS = [
-    "/api/v1/auth/login",
-    "/api/v1/auth/register",
-    "/api/v1/auth/refresh"
+  "/api/v1/auth/login",
+  "/api/v1/auth/register",
+  "/api/v1/auth/refresh",
 ];
 
 export const createApp = (
-    config: GatewayConfig = getGatewayConfig()
+  config: GatewayConfig = getGatewayConfig(),
 ): Express => {
-    const app = express();
+  const app = express();
 
-    // The gateway runs behind a load balancer / reverse proxy, so trust the
-    // forwarded client address for logging and rate limiting.
-    app.set("trust proxy", true);
-    app.disable("x-powered-by");
+  // The gateway runs behind a load balancer / reverse proxy, so trust the
+  // forwarded client address for logging and rate limiting.
+  app.set("trust proxy", true);
+  app.disable("x-powered-by");
 
-    // Correlation id must be established before anything logs.
-    app.use(requestIdMiddleware);
+  // Correlation id must be established before anything logs.
+  app.use(requestIdMiddleware);
 
-    app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: {
+        policy: "cross-origin",
+      },
+      contentSecurityPolicy: {
+        directives: {
+          imgSrc: ["'self'", "data:", "http://localhost:8000"],
+        },
+      },
+    }),
+  );
 
-    app.use(
-        cors({
-            origin: createOriginChecker(
-                config.corsOrigins,
-                config.nodeEnv
-            ),
-            credentials: true,
-            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            allowedHeaders: [
-                "Content-Type",
-                "Authorization",
-                "X-Request-Id"
-            ],
-            exposedHeaders: ["X-Request-Id"]
-        })
+  // Allow the local frontends to display images served by the API Gateway.
+  app.use("/api/v1/products/images", (_req, res, next) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+
+    // Preserve Helmet's CSP while allowing images from the local API Gateway.
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; img-src 'self' data: http://localhost:8000 http://127.0.0.1:8000; object-src 'none'; base-uri 'self'",
     );
 
-    app.use(
-        morgan(
-            ':method :url :status :response-time ms - :res[x-request-id]',
-            {
-                skip: () => config.nodeEnv === "test"
-            }
-        )
-    );
+    next();
+  });
 
-    const limiters = createRateLimiters(config);
+  app.use(
+    cors({
+      origin: createOriginChecker(config.corsOrigins, config.nodeEnv),
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+      exposedHeaders: ["X-Request-Id"],
+    }),
+  );
 
-    app.use(limiters.global);
-    app.use(AUTH_RATE_LIMITED_PATHS, limiters.auth);
+  app.use(
+    morgan(":method :url :status :response-time ms - :res[x-request-id]", {
+      skip: () => config.nodeEnv === "test",
+    }),
+  );
 
-    // Drop transport-level headers before they are forwarded.
-    app.use(stripHopByHopHeaders);
+  const limiters = createRateLimiters(config);
 
-    app.use(express.json({ limit: config.bodyLimit }));
-    app.use(
-        express.urlencoded({
-            extended: true,
-            limit: config.bodyLimit
-        })
-    );
+  app.use(limiters.global);
+  app.use(AUTH_RATE_LIMITED_PATHS, limiters.auth);
 
-    // Authenticate/authorize once, at the edge.
-    app.use(createAuthMiddleware(config));
+  // Drop transport-level headers before they are forwarded.
+  app.use(stripHopByHopHeaders);
 
-    app.use(createRouter(config));
+  app.use(express.json({ limit: config.bodyLimit }));
+  app.use(
+    express.urlencoded({
+      extended: true,
+      limit: config.bodyLimit,
+    }),
+  );
 
-    app.use(notFoundMiddleware);
-    app.use(errorMiddleware);
+  // Authenticate/authorize once, at the edge.
+  app.use(createAuthMiddleware(config));
 
-    return app;
+  app.use(createRouter(config));
+
+  app.use(notFoundMiddleware);
+  app.use(errorMiddleware);
+
+  return app;
 };

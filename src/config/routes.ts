@@ -20,6 +20,45 @@ import type {
  */
 export const ROUTE_RULES: readonly RouteRule[] = [
     // ------------------------------------------------------------------
+    // Admin analytics / reporting
+    //
+    // Declared first so they win over the broader resource rules below
+    // (first match wins). Reporting reads cross-user aggregates, so they
+    // are restricted to administrators at the gateway boundary.
+    // ------------------------------------------------------------------
+    {
+        service: "order",
+        pathPrefix: "/api/v1/orders/reports",
+        auth: "required",
+        roles: ["ADMIN"],
+        injectUserId: true,
+        description: "Order analytics reports (admin only)"
+    },
+    {
+        service: "payment",
+        pathPrefix: "/api/v1/payments/reports",
+        auth: "required",
+        roles: ["ADMIN"],
+        injectUserId: true,
+        description: "Payment analytics reports (admin only)"
+    },
+    {
+        service: "customer",
+        pathPrefix: "/api/v1/customers/reports",
+        auth: "required",
+        roles: ["ADMIN"],
+        injectUserId: true,
+        description: "Customer analytics reports (admin only)"
+    },
+    {
+        service: "product",
+        pathPrefix: "/api/v1/products/reports",
+        auth: "required",
+        roles: ["ADMIN"],
+        description: "Product catalogue reports (admin only)"
+    },
+
+    // ------------------------------------------------------------------
     // Identity / authentication
     // ------------------------------------------------------------------
     {
